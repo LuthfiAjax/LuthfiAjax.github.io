@@ -89,23 +89,27 @@
           const data = await response.json();
           const tableBody = document.getElementById("data-body");
 
+          // Hapus semua baris sebelum menambahkan yang baru
+          tableBody.innerHTML = "";
+
           for (const regionName in data) {
             if (data.hasOwnProperty(regionName)) {
               const regionData = data[regionName];
 
               const row = document.createElement("tr");
               row.innerHTML = `
-                      <td class="text-center">${regionName}</td>
-                      <td class="text-center">${regionData.responden}</td>
-                      <td class="text-center">${regionData.berminat}</td>
-                      <td class="text-center">${regionData.tidak_minat}</td>
-                      <td class="text-center">${regionData.updated}</td>
-                      <td class="text-center"><a target="_blank" class="btn btn-sm btn-success" href="https://docs.google.com/spreadsheets/d/123lCCTDxSaVCeE85UMNgjFq-2UMUFY8lENmrskvFuuA/edit?usp=sharing">View</a></td>
-                  `;
+                <td class="text-center">${regionName}</td>
+                <td class="text-center">${regionData.responden}</td>
+                <td class="text-center">${regionData.berminat}</td>
+                <td class="text-center">${regionData.tidak_minat}</td>
+                <td class="text-center">${regionData.updated}</td>
+                <td class="text-center"><a target="_blank" class="btn btn-sm btn-success" href="https://docs.google.com/spreadsheets/d/123lCCTDxSaVCeE85UMNgjFq-2UMUFY8lENmrskvFuuA/edit?usp=sharing">View</a></td>
+              `;
 
               tableBody.appendChild(row);
             }
           }
+
           // Setelah data dimuat, sembunyikan elemen loading
           loadingElement.style.display = "none";
 
@@ -114,10 +118,6 @@
         } catch (error) {
           console.error("Gagal mengambil data:", error);
         }
-      }
-
-      function viewData(regionName) {
-        alert(`Data Region ${regionName}:\nJumlah Responden: ${data[regionName].responden}\nBerminat: ${data[regionName].berminat}\nTidak Berminat: ${data[regionName].tidak_minat}\nUpdated: ${data[regionName].updated}`);
       }
 
       async function calculateTotal() {
@@ -149,8 +149,15 @@
         }
       }
 
+      // Panggil fetchData dan calculateTotal untuk pertama kali
       fetchData();
       calculateTotal();
+
+      // Jadwalkan pembaruan setiap 20 detik
+      setInterval(() => {
+        fetchData();
+        calculateTotal();
+      }, 20000); // 20000 milidetik = 20 detik
     </script>
   </body>
 </html>
