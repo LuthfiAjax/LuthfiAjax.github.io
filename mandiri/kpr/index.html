@@ -32,6 +32,7 @@
   <body>
     <div class="container my-5">
       <h2 class="fw-bold">Rangkuman Form KPR Mandiri</h2>
+      <p class="fw-bold">Sheet Name: <span id="sheet-name"></span></p>
       <div class="container py-5">
         <div class="row">
           <table id="total-table" class="table">
@@ -57,6 +58,7 @@
           <table id="example" class="table table-striped">
             <thead>
               <tr>
+                <th class="text-center">No.</th>
                 <th class="text-center">Nama Region</th>
                 <th class="text-center">Jumlah Responden</th>
                 <th class="text-center">Berminat</th>
@@ -78,27 +80,28 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-
     <script>
       const apiUrl = "https://script.google.com/macros/s/AKfycbxeuAXXY_tN1l7FQ5HI4x8Jz5871NwhYuhg_M3qn9MzRjAODxI-gPZzDS0z6M5_NNWWeg/exec";
+      const loadingElement = document.getElementById("loading");
+      const tableBody = document.getElementById("data-body");
 
-      async function fetchData() {
+      async function fetchDataAndCalculateTotal() {
         try {
-          const loadingElement = document.getElementById("loading");
           const response = await fetch(apiUrl);
           const data = await response.json();
-          const tableBody = document.getElementById("data-body");
+          let rowNum = 1;
+          let totalResponden = 0;
+          let totalBerminat = 0;
+          let totalTidakBerminat = 0;
 
           // Hapus semua baris sebelum menambahkan yang baru
           tableBody.innerHTML = "";
 
-          for (const regionName in data) {
-            if (data.hasOwnProperty(regionName)) {
-              const regionData = data[regionName];
-
-              const row = document.createElement("tr");
-              row.innerHTML = `
-                <td class="text-center">${regionName}</td>
+          for (const [regionName, regionData] of Object.entries(data)) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td class="text-center">${rowNum++}</td>
+                <td class="text-center">${regionData.sheetName}</td>
                 <td class="text-center">${regionData.responden}</td>
                 <td class="text-center">${regionData.berminat}</td>
                 <td class="text-center">${regionData.tidak_minat}</td>
@@ -106,58 +109,36 @@
                 <td class="text-center"><a target="_blank" class="btn btn-sm btn-success" href="https://docs.google.com/spreadsheets/d/123lCCTDxSaVCeE85UMNgjFq-2UMUFY8lENmrskvFuuA/edit?usp=sharing">View</a></td>
               `;
 
-              tableBody.appendChild(row);
-            }
+            tableBody.appendChild(row);
+
+            // Hitung total
+            totalResponden += regionData.responden;
+            totalBerminat += regionData.berminat;
+            totalTidakBerminat += regionData.tidak_minat;
           }
+
+          // Tampilkan total
+          document.getElementById("total-responden").textContent = totalResponden;
+          document.getElementById("total-berminat").textContent = totalBerminat;
+          document.getElementById("total-tidak-berminat").textContent = totalTidakBerminat;
+          document.getElementById("updated-today").textContent = new Date().toLocaleDateString("id-ID", { year: "numeric", month: "2-digit", day: "2-digit" });
 
           // Setelah data dimuat, sembunyikan elemen loading
           loadingElement.style.display = "none";
 
-          // Inisialisasi DataTable setelah data dimuat
-          $("#example").DataTable();
+          // Tambahkan kode untuk menampilkan nama sheet
+          const sheetNameElement = document.getElementById("sheet-name");
+          sheetNameElement.textContent = data.sheetName;
         } catch (error) {
           console.error("Gagal mengambil data:", error);
         }
       }
 
-      async function calculateTotal() {
-        try {
-          const response = await fetch(apiUrl);
-          const data = await response.json();
+      // Panggil fetchDataAndCalculateTotal untuk pertama kali
+      fetchDataAndCalculateTotal();
 
-          let totalResponden = 0;
-          let totalBerminat = 0;
-          let totalTidakBerminat = 0;
-
-          const today = new Date().toISOString().slice(0, 10);
-
-          for (const regionName in data) {
-            if (data.hasOwnProperty(regionName)) {
-              const regionData = data[regionName];
-              totalResponden += regionData.responden;
-              totalBerminat += regionData.berminat;
-              totalTidakBerminat += regionData.tidak_minat;
-            }
-          }
-
-          document.getElementById("total-responden").textContent = totalResponden;
-          document.getElementById("total-berminat").textContent = totalBerminat;
-          document.getElementById("total-tidak-berminat").textContent = totalTidakBerminat;
-          document.getElementById("updated-today").textContent = new Date().toLocaleDateString("id-ID", { year: "numeric", month: "2-digit", day: "2-digit" });
-        } catch (error) {
-          console.error("Gagal menghitung total:", error);
-        }
-      }
-
-      // Panggil fetchData dan calculateTotal untuk pertama kali
-      fetchData();
-      calculateTotal();
-
-      // Jadwalkan pembaruan setiap 20 detik
-      setInterval(() => {
-        fetchData();
-        calculateTotal();
-      }, 20000); // 20000 milidetik = 20 detik
+      // Jadwalkan pembaruan setiap 10 detik
+      setInterval(fetchDataAndCalculateTotal, 10000); // 10000 milidetik = 10 detik
     </script>
   </body>
 </html>
